@@ -148,4 +148,25 @@ router.put("/:id", cardController.updateCardById);
  */
 router.delete("/:id", cardController.deleteCardById);
 
+
+/** * @swagger
+ * /card:
+ *   get:
+ *     summary: Gets all cards
+ *     tags: [Cards]
+ *     responses:
+ *       200:
+ *         description: A list of cards
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Card'
+ *       500:
+ *         description: Server error
+ */
+router.get("/", cardController.getAllCards);
+
+
 module.exports = router;
