@@ -61,8 +61,38 @@ app.get('/health', (req, res) => {
 //Route'ları kullanma
 app.use("/card", apiLimiter,cardRoutes);
 
+
+// Hata yönetimi (Error Handling) middleware'i
+// Bu geliştirilmiş versiyon, farklı hata türlerine göre daha spesifik yanıtlar döner
 app.use((err,req,res,next)=>{
     console.error("Hata:",err.stack);
+
+  if (err.name=="ValidationError") {
+    const messages=Object.values(err.errors).map(val=>val.message);
+    return res.status(400).json({
+      status:"error",
+      message:"Doğrulama Hatası",
+      errors:messages
+    })
+  }
+
+  // Joi doğrulama hatası
+  if (err.isJoi) {
+    return res.status(400).json({
+      status:"error",
+      message:"Geçersiz istek gövdesi (request body)",
+      errors:err.details.map(detail=>detail.message)
+    })
+  }
+
+ // MongoDB'ye özgü hataları kontrol et (Örneğin, duplicate key error)
+  if (err.code === 11000) {
+    return res.status(409).json({
+      status: 'error',
+      message: 'Bu kayıt zaten mevcut.'
+    });
+  }
+
     res.status(500).json({
       status:"error",
       message:"Sunucuda bir hata oluştu"

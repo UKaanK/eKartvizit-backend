@@ -1,49 +1,108 @@
 const express = require("express");
 const router = express.Router();
 const cardController = require("../controllers/cardController");
+const { validateCard } = require('../validators/cardValidator');
 
 /**
  * @swagger
  * components:
  *   schemas:
+ *     Social:
+ *       type: object
+ *       properties:
+ *         platform:
+ *           type: string
+ *           description: Sosyal medya platformu adı (örneğin, "LinkedIn", "Twitter").
+ *         url:
+ *           type: string
+ *           description: Sosyal medya profilinin URL'si.
  *     Card:
  *       type: object
  *       required:
- *         - title
- *         - content
+ *         - firstName
+ *         - lastName
+ *         - email
  *       properties:
- *         id:
+ *         _id:
  *           type: string
- *           description: The auto-generated ID of the card.
+ *           description: Kartvizitin otomatik oluşturulan ID'si.
+ *         firstName:
+ *           type: string
+ *           description: Kişinin adı.
+ *         lastName:
+ *           type: string
+ *           description: Kişinin soyadı.
+ *         adress:
+ *           type: string
+ *           description: Kişinin adresi.
  *         title:
  *           type: string
- *           description: The title of the card.
- *         content:
+ *           description: Kişinin unvanı.
+ *         company:
  *           type: string
- *           description: The content of the card.
- *         date:
+ *           description: Çalıştığı şirket.
+ *         email:
  *           type: string
- *           format: date
- *           description: The creation date of the card.
+ *           format: email
+ *           description: E-posta adresi (benzersiz olmalı).
+ *         phone:
+ *           type: string
+ *           description: Telefon numarası.
+ *         website:
+ *           type: string
+ *           description: Kişisel veya şirket web sitesi.
+ *         socialMedia:
+ *           type: array
+ *           description: Sosyal medya profilleri listesi.
+ *           items:
+ *             $ref: '#/components/schemas/Social'
  *       example:
- *         id: 60a7e651c6e1f3001c9a1d4b
- *         title: "First Business Card"
- *         content: "Web Development Expert"
- *         date: "2023-10-26T10:00:00.000Z"
+ *         _id: 60a7e651c6e1f3001c9a1d4b
+ *         firstName: "Ali"
+ *         lastName: "Yılmaz"
+ *         email: "ali.yilmaz@example.com"
+ *         adress: "Örnek Mah. Sokak No: 1"
+ *         title: "Yazılım Geliştirici"
+ *         company: "Tech A.Ş."
+ *         phone: "+905551234567"
+ *         website: "https://www.aliyilmaz.dev"
+ *         socialMedia:
+ *           - platform: "LinkedIn"
+ *             url: "https://www.linkedin.com/in/aliyilmaz"
  */
 
 /**
  * @swagger
  * tags:
  *   - name: Cards
- *     description: API for managing cards
+ *     description: Kartvizit yönetimi için API
  */
 
 /**
  * @swagger
  * /card:
+ *   get:
+ *     summary: Tüm kartvizitleri listeler
+ *     tags: [Cards]
+ *     responses:
+ *       200:
+ *         description: Kartvizitler başarıyla listelendi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Card'
+ *       500:
+ *         description: Sunucu hatası
+ */
+router.get("/", cardController.getAllCards);
+
+/**
+ * @swagger
+ * /card:
  *   post:
- *     summary: Creates a new card
+ *     summary: Yeni bir kartvizit oluşturur
  *     tags: [Cards]
  *     requestBody:
  *       required: true
@@ -53,23 +112,23 @@ const cardController = require("../controllers/cardController");
  *             $ref: '#/components/schemas/Card'
  *     responses:
  *       201:
- *         description: The card was successfully created
+ *         description: Kartvizit başarıyla oluşturuldu
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Card'
  *       400:
- *         description: Invalid input
+ *         description: Geçersiz giriş
  *       500:
- *         description: Server error
+ *         description: Sunucu hatası
  */
-router.post("/", cardController.createCard);
+router.post("/", validateCard, cardController.createCard);
 
 /**
  * @swagger
  * /card/{id}:
  *   get:
- *     summary: Gets a card by its ID
+ *     summary: Belirtilen ID'ye sahip kartviziti getirir
  *     tags: [Cards]
  *     parameters:
  *       - in: path
@@ -77,18 +136,18 @@ router.post("/", cardController.createCard);
  *         schema:
  *           type: string
  *         required: true
- *         description: The card ID
+ *         description: Kartvizit ID'si
  *     responses:
  *       200:
- *         description: The card was retrieved successfully
+ *         description: Kartvizit başarıyla getirildi
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Card'
  *       404:
- *         description: The card was not found
+ *         description: Kartvizit bulunamadı
  *       500:
- *         description: Server error
+ *         description: Sunucu hatası
  */
 router.get("/:id", cardController.getCardById);
 
@@ -96,7 +155,7 @@ router.get("/:id", cardController.getCardById);
  * @swagger
  * /card/{id}:
  *   put:
- *     summary: Updates a card by its ID
+ *     summary: Belirtilen ID'ye sahip kartviziti günceller
  *     tags: [Cards]
  *     parameters:
  *       - in: path
@@ -104,7 +163,7 @@ router.get("/:id", cardController.getCardById);
  *         schema:
  *           type: string
  *         required: true
- *         description: The card ID
+ *         description: Kartvizit ID'si
  *     requestBody:
  *       required: true
  *       content:
@@ -113,23 +172,23 @@ router.get("/:id", cardController.getCardById);
  *             $ref: '#/components/schemas/Card'
  *     responses:
  *       200:
- *         description: The card was updated successfully
+ *         description: Kartvizit başarıyla güncellendi
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Card'
  *       404:
- *         description: The card was not found
+ *         description: Kartvizit bulunamadı
  *       500:
- *         description: Server error
+ *         description: Sunucu hatası
  */
-router.put("/:id", cardController.updateCardById);
+router.put("/:id", validateCard, cardController.updateCardById);
 
 /**
  * @swagger
  * /card/{id}:
  *   delete:
- *     summary: Deletes a card by its ID
+ *     summary: Belirtilen ID'ye sahip kartviziti siler
  *     tags: [Cards]
  *     parameters:
  *       - in: path
@@ -137,36 +196,15 @@ router.put("/:id", cardController.updateCardById);
  *         schema:
  *           type: string
  *         required: true
- *         description: The card ID
+ *         description: Kartvizit ID'si
  *     responses:
  *       200:
- *         description: The card was deleted successfully
+ *         description: Kartvizit başarıyla silindi
  *       404:
- *         description: The card was not found
+ *         description: Kartvizit bulunamadı
  *       500:
- *         description: Server error
+ *         description: Sunucu hatası
  */
 router.delete("/:id", cardController.deleteCardById);
-
-
-/** * @swagger
- * /card:
- *   get:
- *     summary: Gets all cards
- *     tags: [Cards]
- *     responses:
- *       200:
- *         description: A list of cards
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Card'
- *       500:
- *         description: Server error
- */
-router.get("/", cardController.getAllCards);
-
 
 module.exports = router;
