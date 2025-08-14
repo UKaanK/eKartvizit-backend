@@ -1,104 +1,20 @@
-const express = require("express");
+const app = require('./app'); // app.js dosyasını içeri aktar
 const mongoose = require("mongoose");
-const cardRoutes = require("./routes/cardRoutes");
-const apiLimiter = require("./middleware/rateLimiter")
-const cors=require("cors");
-const swaggerJsdoc=require("swagger-jsdoc");
-const swaggerUi=require("swagger-ui-express")
-const app = express();
+
 const port = 3000;
 
-// Swagger ayarları
-const swaggerOptions={
-  definition:{
-    openapi:"3.0.0",
-    info:{
-      title:"eKartvizit API",
-      version:"1.0.0",
-      description:"eKartvizit uygulaması için RESTful API"
-    },
-    servers:[
-      {
-        url:"http://localhost:3000"
-      }
-    ]
-  },
-  apis:["./routes/cardRoutes.js"]
-};
+// MongoDB bağlantı dizesini çevresel değişkenden al
+const dbURI = process.env.DB_URI || 'mongodb://mongodb:27017/eKartvizitDB';
 
-const swaggerDocs=swaggerJsdoc(swaggerOptions);
-
-//Middleware
-app.use(express.json());
-app.use(cors());
-
-// Swagger UI için uç nokta
-app.use("/api-docs",swaggerUi.serve,swaggerUi.setup(swaggerDocs))
-
-//MongoDB bağlantısı dizesi(yerel sunucu için)
-const dbURI =process.env.dbURI|| 'mongodb://mongodb:27017/eKartvizitDB';
-
-//Veritabanı bağlanma
-mongoose
-  .connect(dbURI)
+// Veritabanına bağlanma
+mongoose.connect(dbURI)
   .then(() => {
     console.log("MongoDB bağlantısı kuruldu");
+    // Veritabanı bağlantısı kurulduktan sonra sunucuyu dinle
+    app.listen(port, () => {
+      console.log(`Sunucu http://localhost:${port} adresinde çalışıyor`);
+    });
   })
   .catch((err) => {
     console.error("MongoDB bağlantısı kurulamadı:", err);
   });
-
-// Sağlık kontrolü (Health Check) uç noktası
-app.get('/health', (req, res) => {
-  const dbStatus = mongoose.connection.readyState === 1 ? 'up' : 'down';
-  res.status(200).json({
-    status: 'up',
-    database: dbStatus,
-    timestamp: new Date().toISOString()
-  });
-});
-
-//Route'ları kullanma
-app.use("/card", apiLimiter,cardRoutes);
-
-
-// Hata yönetimi (Error Handling) middleware'i
-// Bu geliştirilmiş versiyon, farklı hata türlerine göre daha spesifik yanıtlar döner
-app.use((err,req,res,next)=>{
-    console.error("Hata:",err.stack);
-
-  if (err.name=="ValidationError") {
-    const messages=Object.values(err.errors).map(val=>val.message);
-    return res.status(400).json({
-      status:"error",
-      message:"Doğrulama Hatası",
-      errors:messages
-    })
-  }
-
-  // Joi doğrulama hatası
-  if (err.isJoi) {
-    return res.status(400).json({
-      status:"error",
-      message:"Geçersiz istek gövdesi (request body)",
-      errors:err.details.map(detail=>detail.message)
-    })
-  }
-
- // MongoDB'ye özgü hataları kontrol et (Örneğin, duplicate key error)
-  if (err.code === 11000) {
-    return res.status(409).json({
-      status: 'error',
-      message: 'Bu kayıt zaten mevcut.'
-    });
-  }
-
-    res.status(500).json({
-      status:"error",
-      message:"Sunucuda bir hata oluştu"
-    })
-})
-
-app.listen(port, () => {
-  console.log("Sunucu https://localhost:" + port + " adresinde çalışıyor");
-});

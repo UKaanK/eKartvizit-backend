@@ -1,7 +1,7 @@
 const request = require('supertest');
-const app = require('../server'); // Uygulama örneğini içeri aktarın
+const app = require('../app'); // app.js dosyasını içeri aktar
 const mongoose = require('mongoose');
-const Card = require('../models/Card'); // Card modelini içeri aktarın
+const Card = require('../models/Card'); // Card modelini içeri aktar
 
 describe('Card API', () => {
   // Testler arasında kullanılacak kartvizit ID'si
@@ -9,9 +9,11 @@ describe('Card API', () => {
 
   // Tüm testlerden önce bir kere çalışacak
   beforeAll(async () => {
+    // Jest'in varsayılan 5000ms zaman aşımını artır
+    jest.setTimeout(30000); 
     // Test veritabanına bağlan
-    const dbURI = process.env.DB_URI || 'mongodb://localhost:27017/testdb';
-    await mongoose.connect(dbURI);
+    const testDbURI = 'mongodb://localhost:27017/testdb';
+    await mongoose.connect(testDbURI);
   });
 
   // Her testten sonra veritabanını temizle
